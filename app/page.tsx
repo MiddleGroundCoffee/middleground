@@ -760,7 +760,7 @@ export default function Home() {
       {/* SEARCH */}
 
 <section className="max-w-[660px] mx-auto px-5 sm:px-6 pb-14">
-  
+
         <div className="bg-[#fffdfa] border border-black/15 rounded-md overflow-visible">
 
           {/* YOU */}
@@ -799,12 +799,12 @@ export default function Home() {
                 THEM
               </p>
 
-              <LocationAutocomplete
-                placeholder="Postcode, station or address"
-                onPlaceSelected={
-                  setTheirLocation
-                }
-              />
+<LocationAutocomplete
+  placeholder="Postcode, station or address"
+  onPlaceSelected={setTheirLocation}
+  scrollMarginTop="220px"
+/>
+
 
             </div>
 

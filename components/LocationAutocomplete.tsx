@@ -21,15 +21,16 @@ type SelectedLocation = {
 
 type LocationAutocompleteProps = {
   placeholder: string;
-
   onPlaceSelected: (
     location: SelectedLocation
   ) => void;
+  scrollMarginTop?: string;
 };
 
 export default function LocationAutocomplete({
   placeholder,
   onPlaceSelected,
+  scrollMarginTop = "120px",
 }: LocationAutocompleteProps) {
   const containerRef =
     useRef<HTMLDivElement | null>(
@@ -200,8 +201,7 @@ export default function LocationAutocomplete({
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
-    scrollMarginTop: "120px",
-  }}
+scrollMarginTop,  }}
 />
   );
 }
