@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-} from "react";
-
+import { useEffect, useRef } from "react";
 import {
   importLibrary,
   setOptions,
@@ -24,18 +20,14 @@ type LocationAutocompleteProps = {
   onPlaceSelected: (
     location: SelectedLocation
   ) => void;
-  scrollMarginTop?: string;
 };
 
 export default function LocationAutocomplete({
   placeholder,
   onPlaceSelected,
-  scrollMarginTop = "120px",
 }: LocationAutocompleteProps) {
   const containerRef =
-    useRef<HTMLDivElement | null>(
-      null
-    );
+    useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +35,84 @@ export default function LocationAutocomplete({
     let autocompleteElement:
       | google.maps.places.PlaceAutocompleteElement
       | null = null;
+
+    let firstScrollTimeout:
+      | ReturnType<typeof setTimeout>
+      | undefined;
+
+    let secondScrollTimeout:
+      | ReturnType<typeof setTimeout>
+      | undefined;
+
+    function positionInputOnMobile() {
+      if (window.innerWidth > 640) {
+        return;
+      }
+
+      const container =
+        containerRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      const scrollToInput = () => {
+        const element =
+          containerRef.current;
+
+        if (!element) {
+          return;
+        }
+
+        const rect =
+          element.getBoundingClientRect();
+
+        /*
+          Place the active location field
+          roughly 120px below the top
+          of the visible page.
+        */
+        const targetPosition =
+          window.scrollY +
+          rect.top -
+          120;
+
+        window.scrollTo({
+          top: Math.max(
+            0,
+            targetPosition
+          ),
+          behavior: "smooth",
+        });
+      };
+
+      /*
+        Scroll once immediately...
+      */
+      requestAnimationFrame(
+        scrollToInput
+      );
+
+      /*
+        ...then again after the iPhone
+        keyboard has started opening.
+      */
+      firstScrollTimeout =
+        setTimeout(
+          scrollToInput,
+          300
+        );
+
+      /*
+        One final adjustment after
+        Safari has resized the viewport.
+      */
+      secondScrollTimeout =
+        setTimeout(
+          scrollToInput,
+          650
+        );
+    }
 
     async function initialiseAutocomplete() {
       if (
@@ -92,9 +162,6 @@ export default function LocationAutocomplete({
             placeholder,
           });
 
-        /*
-          Important mobile sizing fixes
-        */
         autocompleteElement.style.display =
           "block";
 
@@ -126,6 +193,25 @@ export default function LocationAutocomplete({
           autocompleteElement
         );
 
+        /*
+          Explicitly reposition the page
+          whenever Google autocomplete
+          receives focus.
+        */
+        autocompleteElement.addEventListener(
+          "focusin",
+          positionInputOnMobile
+        );
+
+        /*
+          Helps on iPhone because this fires
+          before Safari's focus scrolling.
+        */
+        autocompleteElement.addEventListener(
+          "pointerdown",
+          positionInputOnMobile
+        );
+
         autocompleteElement.addEventListener(
           "gmp-select",
           async (
@@ -148,10 +234,15 @@ export default function LocationAutocomplete({
             if (
               !place.location
             ) {
+              console.error(
+                "Selected place has no location."
+              );
+
               return;
             }
 
-            onPlaceSelected({
+            const selectedLocation:
+              SelectedLocation = {
               name:
                 place.displayName ||
                 place.formattedAddress ||
@@ -166,12 +257,16 @@ export default function LocationAutocomplete({
 
               lng:
                 place.location.lng(),
-            });
+            };
+
+            onPlaceSelected(
+              selectedLocation
+            );
           }
         );
       } catch (error) {
         console.error(
-          "Google autocomplete failed:",
+          "Google autocomplete failed to initialise:",
           error
         );
       }
@@ -181,6 +276,36 @@ export default function LocationAutocomplete({
 
     return () => {
       cancelled = true;
+
+      if (
+        firstScrollTimeout
+      ) {
+        clearTimeout(
+          firstScrollTimeout
+        );
+      }
+
+      if (
+        secondScrollTimeout
+      ) {
+        clearTimeout(
+          secondScrollTimeout
+        );
+      }
+
+      if (
+        autocompleteElement
+      ) {
+        autocompleteElement.removeEventListener(
+          "focusin",
+          positionInputOnMobile
+        );
+
+        autocompleteElement.removeEventListener(
+          "pointerdown",
+          positionInputOnMobile
+        );
+      }
 
       if (
         containerRef.current
@@ -194,16 +319,15 @@ export default function LocationAutocomplete({
     onPlaceSelected,
   ]);
 
-return (
-  <div
-    ref={containerRef}
-    className="relative z-50 w-full min-w-0 max-w-full"
-    style={{
-      width: "100%",
-      maxWidth: "100%",
-      minWidth: 0,
-      scrollMarginTop,
-    }}
-  />
-);
+  return (
+    <div
+      ref={containerRef}
+      className="relative z-50 w-full min-w-0 max-w-full"
+      style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+      }}
+    />
+  );
 }

@@ -802,7 +802,6 @@ export default function Home() {
 <LocationAutocomplete
   placeholder="Postcode, station or address"
   onPlaceSelected={setTheirLocation}
-  scrollMarginTop="220px"
 />
 
 
