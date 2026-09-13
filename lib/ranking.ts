@@ -1,20 +1,15 @@
 export type RankedCafe = {
   id: string;
 
-  displayName?: {
-    text?: string;
-  };
+  name?: string;
 
-  formattedAddress?: string;
+  googleRating?: number;
+  googleReviewCount?: number;
 
-  rating?: number;
-
-  userRatingCount?: number;
-
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
+  coffeeQuality?: number;
+  seating?: number;
+  quiet?: number;
+  meetingSuitability?: number;
 
   timeA?: number;
   timeB?: number;
@@ -27,126 +22,209 @@ export type RankedCafe = {
   preferencePenalty?: number;
 
   score?: number;
-
-  isChain?: boolean;
 };
 
 
-// Known chains we want to exclude
-const CHAIN_NAMES = [
-  "costa",
-  "costa coffee",
-  "starbucks",
-  "pret",
-  "pret a manger",
-  "caffè nero",
-  "caffe nero",
-  "blank street",
-  "greggs",
-  "paul",
-  "gail's",
-  "gails",
-  "joe & the juice",
-  "joe and the juice",
-  "black sheep coffee",
-  "grind",
-];
-
-
-export function isChainCafe(name?: string) {
-  if (!name) return false;
-
-  const normalisedName = name
-    .toLowerCase()
-    .trim();
-
-  return CHAIN_NAMES.some((chain) =>
-    normalisedName.includes(chain)
+function clamp(
+  value: number,
+  min: number,
+  max: number
+) {
+  return Math.min(
+    Math.max(value, min),
+    max
   );
 }
 
 
-// Produces a 0–10 penalty.
-//
-// Excellent cafe = close to 0.
-// Weak / uncertain cafe = closer to 10.
-export function calculateCafeQualityPenalty(
-  rating?: number,
-  reviewCount?: number
+function googleRatingToTen(
+  googleRating?: number
 ) {
-  if (!rating) {
-    return 7;
+  if (
+    googleRating === undefined ||
+    googleRating === null
+  ) {
+    return undefined;
   }
 
-  // Convert Google 1–5 rating into
-  // a penalty from approximately 0–10.
-  const ratingPenalty =
-    Math.max(0, 5 - rating) * 2;
+  return clamp(
+    googleRating * 2,
+    0,
+    10
+  );
+}
 
-  // Penalise cafes with very little
-  // review evidence.
-  let reviewPenalty = 0;
 
-  if (!reviewCount) {
-    reviewPenalty = 3;
-  } else if (reviewCount < 20) {
-    reviewPenalty = 2.5;
-  } else if (reviewCount < 50) {
-    reviewPenalty = 2;
-  } else if (reviewCount < 100) {
-    reviewPenalty = 1.5;
-  } else if (reviewCount < 250) {
-    reviewPenalty = 1;
-  } else if (reviewCount < 500) {
-    reviewPenalty = 0.5;
+/*
+  Cafe quality score:
+
+  coffee quality       50%
+  seating              20%
+  meeting suitability  20%
+  Google rating        10%
+
+  If some curated fields are blank,
+  the function automatically reweights
+  the fields that are available.
+*/
+export function calculateCafeQualityScore({
+  coffeeQuality,
+  seating,
+  meetingSuitability,
+  googleRating,
+}: {
+  coffeeQuality?: number;
+  seating?: number;
+  meetingSuitability?: number;
+  googleRating?: number;
+}) {
+  const googleScore =
+    googleRatingToTen(
+      googleRating
+    );
+
+  const components = [
+    {
+      value: coffeeQuality,
+      weight: 0.5,
+    },
+    {
+      value: seating,
+      weight: 0.2,
+    },
+    {
+      value: meetingSuitability,
+      weight: 0.2,
+    },
+    {
+      value: googleScore,
+      weight: 0.1,
+    },
+  ];
+
+  let weightedTotal = 0;
+  let availableWeight = 0;
+
+  for (const component of components) {
+    if (
+      component.value !== undefined &&
+      component.value !== null &&
+      Number.isFinite(
+        component.value
+      )
+    ) {
+      weightedTotal +=
+        clamp(
+          component.value,
+          0,
+          10
+        ) *
+        component.weight;
+
+      availableWeight +=
+        component.weight;
+    }
   }
+
+  /*
+    If none of the quality data exists,
+    use a neutral score.
+  */
+  if (availableWeight === 0) {
+    return 5;
+  }
+
+  const score =
+    weightedTotal /
+    availableWeight;
 
   return Number(
-    Math.min(
-      10,
-      ratingPenalty + reviewPenalty
-    ).toFixed(2)
+    score.toFixed(2)
   );
 }
 
 
-// For now this is zero.
-//
-// Later we will replace this with actual
-// walking time associated with the journey.
+/*
+  Lower penalty = better cafe.
+
+  Example:
+  quality score 9
+  becomes penalty 1.
+*/
+export function calculateCafeQualityPenalty({
+  coffeeQuality,
+  seating,
+  meetingSuitability,
+  googleRating,
+}: {
+  coffeeQuality?: number;
+  seating?: number;
+  meetingSuitability?: number;
+  googleRating?: number;
+}) {
+  const qualityScore =
+    calculateCafeQualityScore({
+      coffeeQuality,
+      seating,
+      meetingSuitability,
+      googleRating,
+    });
+
+  const penalty =
+    10 - qualityScore;
+
+  return Number(
+    penalty.toFixed(2)
+  );
+}
+
+
 export function calculateWalkingPenalty(
-  walkA?: number,
-  walkB?: number
+  walkingMinutes?: number
 ) {
-  if (walkA === undefined || walkB === undefined) {
+  if (
+    walkingMinutes === undefined ||
+    walkingMinutes === null
+  ) {
     return 0;
   }
 
-  const averageWalk = (walkA + walkB) / 2;
+  if (walkingMinutes <= 5) {
+    return 0;
+  }
 
-  if (averageWalk <= 5) return 0;
-  if (averageWalk <= 10) return 2;
-  if (averageWalk <= 15) return 5;
+  if (walkingMinutes <= 10) {
+    return 2;
+  }
+
+  if (walkingMinutes <= 15) {
+    return 5;
+  }
 
   return 10;
 }
 
 
-// Preference penalty:
-//
-// Independent cafe = 0.
-//
-// We are already removing known chains,
-// but this leaves the field available for
-// other preferences later:
-// quiet, outdoor seating, laptop friendly etc.
-export function calculatePreferencePenalty(
-  isChain: boolean
-) {
-  return isChain ? 10 : 0;
+/*
+  For now, curated cafes get no
+  preference penalty.
+
+  Later we can use:
+  quiet
+  outdoor seating
+  laptop friendliness
+  etc.
+*/
+export function calculatePreferencePenalty() {
+  return 0;
 }
 
 
+/*
+  Main Middle Ground formula.
+
+  Lower score = better.
+*/
 export function calculateCafeScore({
   averageTravelTime,
   fairnessDifference,
@@ -167,5 +245,7 @@ export function calculateCafeScore({
     walkingPenalty * 0.1 +
     preferencePenalty * 0.05;
 
-  return Number(score.toFixed(2));
+  return Number(
+    score.toFixed(2)
+  );
 }

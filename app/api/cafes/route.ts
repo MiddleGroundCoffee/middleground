@@ -1,79 +1,94 @@
 import { NextResponse } from "next/server";
+import { getCafes } from "@/lib/cafes";
+import { calculateDistanceKm } from "@/lib/distance";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
     const { lat, lng } = body;
 
-    if (lat === undefined || lng === undefined) {
-      return NextResponse.json(
-        { error: "Latitude and longitude are required." },
-        { status: 400 }
-      );
-    }
-
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "GOOGLE_MAPS_API_KEY is missing." },
-        { status: 500 }
-      );
-    }
-
-    const response = await fetch(
-      "https://places.googleapis.com/v1/places:searchNearby",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask":
-            "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount",
-        },
-        body: JSON.stringify({
-          includedTypes: ["cafe"],
-          maxResultCount: 20,
-          locationRestriction: {
-            circle: {
-              center: {
-                latitude: lat,
-                longitude: lng,
-              },
-              radius: 2000,
-            },
-          },
-        }),
-      }
-    );
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      console.error("Google Places error:", text);
-
+    if (
+      lat === undefined ||
+      lng === undefined
+    ) {
       return NextResponse.json(
         {
-          error: "Google Places request failed.",
-          details: text,
+          error:
+            "Latitude and longitude are required.",
         },
-        { status: response.status }
+        {
+          status: 400,
+        }
       );
     }
 
-    const data = JSON.parse(text);
+    const cafes = getCafes();
 
-    return NextResponse.json(data);
+    const midpoint = {
+      latitude: Number(lat),
+      longitude: Number(lng),
+    };
+
+    const cafesWithDistance =
+      cafes.map((cafe) => {
+        const distanceKm =
+          calculateDistanceKm(
+            midpoint,
+            {
+              latitude:
+                cafe.latitude,
+
+              longitude:
+                cafe.longitude,
+            }
+          );
+
+        return {
+          ...cafe,
+          distanceKm,
+        };
+      });
+
+    const nearestCafes =
+      cafesWithDistance
+        .sort(
+          (a, b) =>
+            a.distanceKm -
+            b.distanceKm
+        )
+        .slice(0, 25);
+
+    return NextResponse.json({
+      totalCuratedCafes:
+        cafes.length,
+
+      candidateCount:
+        nearestCafes.length,
+
+      places:
+        nearestCafes,
+    });
+
   } catch (error) {
-    console.error("Cafe API error:", error);
+    console.error(
+      "Curated cafe search error:",
+      error
+    );
 
     return NextResponse.json(
       {
-        error: "Something went wrong in the cafe search.",
+        error:
+          "Could not search curated cafes.",
+
         details:
-          error instanceof Error ? error.message : String(error),
+          error instanceof Error
+            ? error.message
+            : String(error),
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

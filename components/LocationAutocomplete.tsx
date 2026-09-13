@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import {
+  importLibrary,
+  setOptions,
+} from "@googlemaps/js-api-loader";
 
-type Location = {
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-};
+setOptions({
+  key:
+    process.env
+      .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+  v: "weekly",
+});
 
 type Props = {
   placeholder: string;
@@ -26,10 +30,7 @@ export default function LocationAutocomplete({
         "@googlemaps/js-api-loader"
       );
 
-      setOptions({
-        key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-        v: "weekly",
-      });
+
 
       const placesLibrary = await importLibrary("places");
 
