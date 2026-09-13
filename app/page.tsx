@@ -732,8 +732,8 @@ export default function Home() {
 
       {/* HERO */}
 
-<section className="max-w-3xl mx-auto px-5 sm:px-6 pt-12 sm:pt-16 md:pt-20 pb-8 text-center">
-<h1 className="font-display font-normal tracking-[-0.025em] leading-[0.98] text-[40px] sm:text-[48px] md:text-[60px]">
+<section className="max-w-3xl mx-auto px-5 sm:px-6 pt-8 sm:pt-12 md:pt-20 pb-5 text-center">
+  <h1 className="font-display font-normal tracking-[-0.025em] leading-[0.98] text-[40px] sm:text-[48px] md:text-[60px]">
 
   <span className="block">
     Find the fairest coffee
@@ -759,8 +759,8 @@ export default function Home() {
 
       {/* SEARCH */}
 
-      <section className="max-w-[660px] mx-auto px-6 pb-14">
-
+<section className="max-w-[660px] mx-auto px-5 sm:px-6 pb-14">
+  
         <div className="bg-[#fffdfa] border border-black/15 rounded-md overflow-visible">
 
           {/* YOU */}
