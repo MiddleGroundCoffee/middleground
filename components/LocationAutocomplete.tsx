@@ -1,79 +1,215 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useRef,
+} from "react";
+
 import {
   importLibrary,
   setOptions,
 } from "@googlemaps/js-api-loader";
 
-setOptions({
-  key:
-    process.env
-      .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-  v: "weekly",
-});
+/*
+  This prevents setOptions being called
+  more than once in the browser.
+*/
+let googleLoaderConfigured =
+  false;
 
-type Props = {
+type SelectedLocation = {
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+};
+
+type LocationAutocompleteProps = {
   placeholder: string;
-  onPlaceSelected: (location: Location) => void;
+
+  onPlaceSelected: (
+    location: SelectedLocation
+  ) => void;
 };
 
 export default function LocationAutocomplete({
   placeholder,
   onPlaceSelected,
-}: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
+}: LocationAutocompleteProps) {
+  const containerRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
 
   useEffect(() => {
+    let cancelled = false;
+
+    let autocompleteElement:
+      | google.maps.places.PlaceAutocompleteElement
+      | null = null;
+
     async function initialiseAutocomplete() {
-      const { setOptions, importLibrary } = await import(
-        "@googlemaps/js-api-loader"
-      );
+      /*
+        IMPORTANT:
+        Only configure Google Maps
+        inside the browser.
 
+        This avoids:
+        "window is not defined"
+        during Vercel / Next.js builds.
+      */
+      if (
+        typeof window ===
+        "undefined"
+      ) {
+        return;
+      }
 
+      if (
+        !googleLoaderConfigured
+      ) {
+        setOptions({
+          key:
+            process.env
+              .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+          v: "weekly",
+        });
 
-      const placesLibrary = await importLibrary("places");
+        googleLoaderConfigured =
+          true;
+      }
 
-      const { PlaceAutocompleteElement } =
-        placesLibrary as google.maps.PlacesLibrary;
+      if (
+        !containerRef.current
+      ) {
+        return;
+      }
 
-      const autocomplete = new PlaceAutocompleteElement();
+      try {
+        const {
+          PlaceAutocompleteElement,
+        } =
+          (await importLibrary(
+            "places"
+          )) as google.maps.PlacesLibrary;
 
-      autocomplete.placeholder = placeholder;
-      autocomplete.style.width = "100%";
-
-      autocomplete.addEventListener(
-        "gmp-select",
-        async (event: any) => {
-          const place = event.placePrediction.toPlace();
-
-          await place.fetchFields({
-            fields: [
-              "displayName",
-              "formattedAddress",
-              "location",
-            ],
-          });
-
-          if (!place.location) return;
-
-          onPlaceSelected({
-            name: place.displayName || "",
-            address: place.formattedAddress || "",
-            lat: place.location.lat(),
-            lng: place.location.lng(),
-          });
+        if (
+          cancelled ||
+          !containerRef.current
+        ) {
+          return;
         }
-      );
 
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-        containerRef.current.appendChild(autocomplete);
+        autocompleteElement =
+          new PlaceAutocompleteElement(
+            {
+              placeholder,
+            }
+          );
+
+        autocompleteElement.style.width =
+          "100%";
+
+        autocompleteElement.style.border =
+          "none";
+
+        autocompleteElement.style.outline =
+          "none";
+
+        autocompleteElement.style.background =
+          "transparent";
+
+        containerRef.current.innerHTML =
+          "";
+
+        containerRef.current.appendChild(
+          autocompleteElement
+        );
+
+        autocompleteElement.addEventListener(
+          "gmp-select",
+          async (
+            event: Event
+          ) => {
+            const placeEvent =
+              event as google.maps.places.PlacePredictionSelectEvent;
+
+            const place =
+              placeEvent.placePrediction.toPlace();
+
+            await place.fetchFields({
+              fields: [
+                "displayName",
+                "formattedAddress",
+                "location",
+              ],
+            });
+
+            if (
+              !place.location
+            ) {
+              console.error(
+                "Selected place has no location."
+              );
+
+              return;
+            }
+
+            const selectedLocation: SelectedLocation =
+              {
+                name:
+                  place.displayName ||
+                  place.formattedAddress ||
+                  "Selected location",
+
+                address:
+                  place.formattedAddress ||
+                  "",
+
+                lat:
+                  place.location.lat(),
+
+                lng:
+                  place.location.lng(),
+              };
+
+            onPlaceSelected(
+              selectedLocation
+            );
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Google autocomplete failed to initialise:",
+          error
+        );
       }
     }
 
     initialiseAutocomplete();
-  }, [placeholder, onPlaceSelected]);
 
-  return <div ref={containerRef} />;
+    return () => {
+      cancelled = true;
+
+      if (
+        containerRef.current
+      ) {
+        containerRef.current.innerHTML =
+          "";
+      }
+
+      autocompleteElement =
+        null;
+    };
+  }, [
+    placeholder,
+    onPlaceSelected,
+  ]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative z-50 w-full"
+    />
+  );
 }
