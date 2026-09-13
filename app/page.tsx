@@ -732,19 +732,20 @@ export default function Home() {
 
       {/* HERO */}
 
-      <section className="max-w-3xl mx-auto px-6 pt-16 md:pt-20 pb-8 text-center">
+<section className="max-w-3xl mx-auto px-5 sm:px-6 pt-12 sm:pt-16 md:pt-20 pb-8 text-center">
+<h1 className="font-display font-normal tracking-[-0.025em] leading-[0.98] text-[40px] sm:text-[48px] md:text-[60px]">
 
-<h1 className="font-display text-[52px] md:text-[60px] leading-[1.05] tracking-[-0.02em] font-normal">
-  Find the fairest coffee
-  <br />
+  <span className="block">
+    Find the fairest coffee
+  </span>
 
-  <em className="font-normal">
+  <em className="block mt-2 font-normal whitespace-nowrap text-[38px] sm:text-[46px] md:text-[60px]">
     between you two.
   </em>
+
 </h1>
 
-        <p className="mt-5 text-[15px] text-black/55 leading-relaxed">
-
+<p className="mt-5 text-[14px] sm:text-[15px] text-black/55 leading-relaxed">
           Two starting points,
           one cafe.
           <br />
@@ -791,7 +792,7 @@ export default function Home() {
           {/* THEM */}
 
 <div className="relative z-10 flex items-center gap-4 px-5 py-4">
-  
+
             <span className="w-2 h-2 rounded-full border-[1.5px] border-[#26241f] flex-none" />
 
             <div className="flex-1">
