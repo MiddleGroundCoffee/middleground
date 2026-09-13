@@ -194,14 +194,16 @@ export default function LocationAutocomplete({
     onPlaceSelected,
   ]);
 
-<div
-  ref={containerRef}
-  className="relative z-50 w-full min-w-0 max-w-full"
-  style={{
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-scrollMarginTop,  }}
-/>
-  );
+return (
+  <div
+    ref={containerRef}
+    className="relative z-50 w-full min-w-0 max-w-full"
+    style={{
+      width: "100%",
+      maxWidth: "100%",
+      minWidth: 0,
+      scrollMarginTop,
+    }}
+  />
+);
 }
