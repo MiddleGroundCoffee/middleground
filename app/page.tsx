@@ -764,8 +764,7 @@ export default function Home() {
 
           {/* YOU */}
 
-          <div className="flex items-center gap-4 px-5 py-4">
-
+<div className="relative z-30 flex items-center gap-4 px-5 py-4">
             <span className="w-2 h-2 rounded-full bg-[#26241f] flex-none" />
 
             <div className="flex-1">
@@ -791,8 +790,8 @@ export default function Home() {
 
           {/* THEM */}
 
-          <div className="flex items-center gap-4 px-5 py-4">
-
+<div className="relative z-10 flex items-center gap-4 px-5 py-4">
+  
             <span className="w-2 h-2 rounded-full border-[1.5px] border-[#26241f] flex-none" />
 
             <div className="flex-1">
