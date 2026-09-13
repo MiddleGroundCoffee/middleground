@@ -768,8 +768,7 @@ export default function Home() {
 <div className="relative z-30 flex items-center gap-4 px-5 py-4">
             <span className="w-2 h-2 rounded-full bg-[#26241f] flex-none" />
 
-            <div className="flex-1">
-
+<div className="flex-1 min-w-0">
 <p className="font-mono-brand text-[10px] tracking-[0.14em] text-black/40 font-medium mb-1">
                 YOU
               </p>
@@ -795,8 +794,7 @@ export default function Home() {
 
             <span className="w-2 h-2 rounded-full border-[1.5px] border-[#26241f] flex-none" />
 
-            <div className="flex-1">
-
+<div className="flex-1 min-w-0">
 <p className="font-mono-brand text-[10px] tracking-[0.14em] text-black/40 font-medium mb-1">
                 THEM
               </p>

@@ -10,12 +10,7 @@ import {
   setOptions,
 } from "@googlemaps/js-api-loader";
 
-/*
-  This prevents setOptions being called
-  more than once in the browser.
-*/
-let googleLoaderConfigured =
-  false;
+let googleLoaderConfigured = false;
 
 type SelectedLocation = {
   name: string;
@@ -49,15 +44,6 @@ export default function LocationAutocomplete({
       | null = null;
 
     async function initialiseAutocomplete() {
-      /*
-        IMPORTANT:
-        Only configure Google Maps
-        inside the browser.
-
-        This avoids:
-        "window is not defined"
-        during Vercel / Next.js builds.
-      */
       if (
         typeof window ===
         "undefined"
@@ -101,14 +87,27 @@ export default function LocationAutocomplete({
         }
 
         autocompleteElement =
-          new PlaceAutocompleteElement(
-            {
-              placeholder,
-            }
-          );
+          new PlaceAutocompleteElement({
+            placeholder,
+          });
+
+        /*
+          Important mobile sizing fixes
+        */
+        autocompleteElement.style.display =
+          "block";
 
         autocompleteElement.style.width =
           "100%";
+
+        autocompleteElement.style.maxWidth =
+          "100%";
+
+        autocompleteElement.style.minWidth =
+          "0";
+
+        autocompleteElement.style.boxSizing =
+          "border-box";
 
         autocompleteElement.style.border =
           "none";
@@ -148,39 +147,30 @@ export default function LocationAutocomplete({
             if (
               !place.location
             ) {
-              console.error(
-                "Selected place has no location."
-              );
-
               return;
             }
 
-            const selectedLocation: SelectedLocation =
-              {
-                name:
-                  place.displayName ||
-                  place.formattedAddress ||
-                  "Selected location",
+            onPlaceSelected({
+              name:
+                place.displayName ||
+                place.formattedAddress ||
+                "Selected location",
 
-                address:
-                  place.formattedAddress ||
-                  "",
+              address:
+                place.formattedAddress ||
+                "",
 
-                lat:
-                  place.location.lat(),
+              lat:
+                place.location.lat(),
 
-                lng:
-                  place.location.lng(),
-              };
-
-            onPlaceSelected(
-              selectedLocation
-            );
+              lng:
+                place.location.lng(),
+            });
           }
         );
       } catch (error) {
         console.error(
-          "Google autocomplete failed to initialise:",
+          "Google autocomplete failed:",
           error
         );
       }
@@ -197,9 +187,6 @@ export default function LocationAutocomplete({
         containerRef.current.innerHTML =
           "";
       }
-
-      autocompleteElement =
-        null;
     };
   }, [
     placeholder,
@@ -209,7 +196,12 @@ export default function LocationAutocomplete({
   return (
     <div
       ref={containerRef}
-      className="relative z-50 w-full"
+      className="relative z-50 w-full min-w-0 max-w-full"
+      style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+      }}
     />
   );
 }
