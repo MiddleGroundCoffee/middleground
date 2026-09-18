@@ -44,9 +44,7 @@ export default function LocationAutocomplete({
       | ReturnType<typeof setTimeout>
       | undefined;
 
-    function positionInputOnMobile() {
-      if (window.innerWidth > 640) {
-        return;
+
       }
 
       const container =
@@ -198,19 +196,44 @@ export default function LocationAutocomplete({
           whenever Google autocomplete
           receives focus.
         */
-        autocompleteElement.addEventListener(
-          "focusin",
-          positionInputOnMobile
-        );
+const bringInputIntoView = () => {
+  if (window.innerWidth > 640) return;
 
-        /*
-          Helps on iPhone because this fires
-          before Safari's focus scrolling.
-        */
-        autocompleteElement.addEventListener(
-          "pointerdown",
-          positionInputOnMobile
-        );
+  const element = containerRef.current;
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+
+  const targetY =
+    window.scrollY +
+    rect.top -
+    80;
+
+  window.scrollTo({
+    top: Math.max(0, targetY),
+    behavior: "auto",
+  });
+};
+
+autocompleteElement.addEventListener(
+  "pointerdown",
+  bringInputIntoView
+);
+
+autocompleteElement.addEventListener(
+  "focusin",
+  () => {
+    setTimeout(
+      bringInputIntoView,
+      50
+    );
+
+    setTimeout(
+      bringInputIntoView,
+      350
+    );
+  }
+);
 
         autocompleteElement.addEventListener(
           "gmp-select",

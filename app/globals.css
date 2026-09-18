@@ -61,3 +61,14 @@ html {
     font-size: 16px;
   }
 }
+
+@media (max-width: 640px) {
+  html,
+  body {
+    scroll-padding-top: 80px;
+  }
+
+  gmp-place-autocomplete {
+    scroll-margin-top: 80px;
+  }
+}
