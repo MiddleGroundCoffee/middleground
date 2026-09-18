@@ -62,22 +62,22 @@ export async function POST(
       );
     }
 
-    const modeMap: Record<
-      string,
-      string
-    > = {
-      "Public transport":
-        "TRANSIT",
+const modeMap: Record<
+  string,
+  string
+> = {
+  "Public transport": "TRANSIT",
+  TRANSIT: "TRANSIT",
 
-      Walking:
-        "WALK",
+  Walking: "WALK",
+  WALK: "WALK",
 
-      Driving:
-        "DRIVE",
+  Driving: "DRIVE",
+  DRIVE: "DRIVE",
 
-      Cycling:
-        "BICYCLE",
-    };
+  Cycling: "BICYCLE",
+  BICYCLE: "BICYCLE",
+};
 
     const googleTravelMode =
       modeMap[travelMode] ||

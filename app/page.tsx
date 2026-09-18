@@ -801,31 +801,33 @@ export default function Home() {
       }
 
       const routesResponse =
-        await fetch(
-          "/api/routes",
-          {
-            method: "POST",
+  await fetch(
+    "/api/routes",
+    {
+      method: "POST",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
 
-            body: JSON.stringify({
-              origins: [
-                yourLocation,
-                theirLocation,
-              ],
+      body: JSON.stringify({
+        personA: {
+          lat: yourLocation.lat,
+          lng: yourLocation.lng,
+        },
 
-              cafes:
-                candidates,
+        personB: {
+          lat: theirLocation.lat,
+          lng: theirLocation.lng,
+        },
 
-              travelMode: mode,
+        cafes: candidates,
 
-              mode,
-            }),
-          }
-        );
+        travelMode: mode,
+      }),
+    }
+  );
 
       if (
         !routesResponse.ok
