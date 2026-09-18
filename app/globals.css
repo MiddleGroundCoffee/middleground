@@ -1,40 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f3ee;
+  --foreground: #26241f;
+  --accent: #8a5a41;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
+  margin: 0;
+  min-height: 100vh;
+
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-body {
+
   font-family:
     var(--font-hanken-grotesk),
     Arial,
+    Helvetica,
     sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 .font-display {
   font-family:
     var(--font-instrument-serif),
     Georgia,
+    "Times New Roman",
     serif;
 }
 
@@ -42,6 +56,7 @@ body {
   font-family:
     var(--font-hanken-grotesk),
     Arial,
+    Helvetica,
     sans-serif;
 }
 
@@ -50,25 +65,65 @@ body {
     var(--font-ibm-plex-mono),
     monospace;
 }
-html {
-  scroll-behavior: smooth;
+
+/*
+  Google Places autocomplete is a web component.
+
+  These rules make sure it does not become
+  wider than its parent on mobile.
+*/
+gmp-place-autocomplete {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
 }
 
+/*
+  Prevent content inside flex/grid layouts
+  from forcing the page wider than the screen.
+*/
+.min-w-0 {
+  min-width: 0;
+}
+
+/*
+  iPhone Safari can zoom the page when an
+  editable field has text smaller than 16px.
+
+  Google's autocomplete contains its own input,
+  so we also apply the size to the web component.
+*/
 @media (max-width: 640px) {
   input,
   select,
-  textarea {
+  textarea,
+  gmp-place-autocomplete {
     font-size: 16px;
+  }
+
+  /*
+    Avoid smooth scrolling while the iPhone
+    keyboard is opening. LocationAutocomplete
+    controls the position explicitly.
+  */
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    overflow-x: hidden;
   }
 }
 
-@media (max-width: 640px) {
-  html,
-  body {
-    scroll-padding-top: 80px;
-  }
-
-  gmp-place-autocomplete {
-    scroll-margin-top: 80px;
+/*
+  Desktop can use smooth scrolling normally.
+*/
+@media (min-width: 641px) {
+  html {
+    scroll-behavior: smooth;
   }
 }

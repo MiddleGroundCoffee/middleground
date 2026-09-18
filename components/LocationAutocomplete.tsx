@@ -36,15 +36,32 @@ export default function LocationAutocomplete({
       | google.maps.places.PlaceAutocompleteElement
       | null = null;
 
-    let firstScrollTimeout:
+    let scrollTimeout1:
       | ReturnType<typeof setTimeout>
       | undefined;
 
-    let secondScrollTimeout:
+    let scrollTimeout2:
       | ReturnType<typeof setTimeout>
       | undefined;
 
+    let scrollTimeout3:
+      | ReturnType<typeof setTimeout>
+      | undefined;
 
+    /*
+      Keeps the active autocomplete field visible
+      when the iPhone keyboard opens.
+
+      We position the field around 90px from the
+      top of the visible viewport so the user can
+      still see what they are typing.
+    */
+    function keepInputVisible() {
+      if (
+        typeof window === "undefined" ||
+        window.innerWidth > 640
+      ) {
+        return;
       }
 
       const container =
@@ -54,62 +71,111 @@ export default function LocationAutocomplete({
         return;
       }
 
-      const scrollToInput = () => {
-        const element =
-          containerRef.current;
+      const rect =
+        container.getBoundingClientRect();
 
-        if (!element) {
-          return;
-        }
+      const visualViewport =
+        window.visualViewport;
 
-        const rect =
-          element.getBoundingClientRect();
+      const viewportOffsetTop =
+        visualViewport?.offsetTop ?? 0;
 
-        /*
-          Place the active location field
-          roughly 120px below the top
-          of the visible page.
-        */
-        const targetPosition =
-          window.scrollY +
-          rect.top -
-          120;
+      const desiredTop =
+        viewportOffsetTop + 90;
 
-        window.scrollTo({
-          top: Math.max(
-            0,
-            targetPosition
-          ),
-          behavior: "smooth",
-        });
-      };
+      const difference =
+        rect.top - desiredTop;
 
       /*
-        Scroll once immediately...
+        Only move the page when the field
+        is noticeably away from where we
+        want it.
       */
-      requestAnimationFrame(
-        scrollToInput
+      if (Math.abs(difference) < 10) {
+        return;
+      }
+
+      window.scrollBy({
+        top: difference,
+        left: 0,
+        behavior: "auto",
+      });
+    }
+
+    function handlePointerDown() {
+      if (window.innerWidth > 640) {
+        return;
+      }
+
+      /*
+        Position the field before Safari
+        starts opening the keyboard.
+      */
+      keepInputVisible();
+
+      scrollTimeout1 =
+        setTimeout(
+          keepInputVisible,
+          50
+        );
+    }
+
+    function handleFocusIn() {
+      if (window.innerWidth > 640) {
+        return;
+      }
+
+      /*
+        Safari changes the visual viewport
+        several times while the keyboard
+        animates in.
+
+        Re-check the position at each stage.
+      */
+      keepInputVisible();
+
+      scrollTimeout1 =
+        setTimeout(
+          keepInputVisible,
+          100
+        );
+
+      scrollTimeout2 =
+        setTimeout(
+          keepInputVisible,
+          350
+        );
+
+      scrollTimeout3 =
+        setTimeout(
+          keepInputVisible,
+          700
+        );
+    }
+
+    function handleViewportChange() {
+      if (window.innerWidth > 640) {
+        return;
+      }
+
+      /*
+        Only adjust if this autocomplete
+        currently contains the focused item.
+      */
+      const container =
+        containerRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      /*
+        Give Safari a moment to complete
+        its viewport resize before adjusting.
+      */
+      window.requestAnimationFrame(
+        keepInputVisible
       );
-
-      /*
-        ...then again after the iPhone
-        keyboard has started opening.
-      */
-      firstScrollTimeout =
-        setTimeout(
-          scrollToInput,
-          300
-        );
-
-      /*
-        One final adjustment after
-        Safari has resized the viewport.
-      */
-      secondScrollTimeout =
-        setTimeout(
-          scrollToInput,
-          650
-        );
     }
 
     async function initialiseAutocomplete() {
@@ -160,6 +226,11 @@ export default function LocationAutocomplete({
             placeholder,
           });
 
+        /*
+          Prevent Google's web component
+          from overflowing its flex parent
+          on mobile.
+        */
         autocompleteElement.style.display =
           "block";
 
@@ -192,49 +263,31 @@ export default function LocationAutocomplete({
         );
 
         /*
-          Explicitly reposition the page
-          whenever Google autocomplete
-          receives focus.
+          Mobile focus handling.
         */
-const bringInputIntoView = () => {
-  if (window.innerWidth > 640) return;
+        autocompleteElement.addEventListener(
+          "pointerdown",
+          handlePointerDown
+        );
 
-  const element = containerRef.current;
-  if (!element) return;
+        autocompleteElement.addEventListener(
+          "focusin",
+          handleFocusIn
+        );
 
-  const rect = element.getBoundingClientRect();
+        /*
+          Reposition again whenever the
+          iPhone keyboard changes the size
+          of the visible viewport.
+        */
+        window.visualViewport?.addEventListener(
+          "resize",
+          handleViewportChange
+        );
 
-  const targetY =
-    window.scrollY +
-    rect.top -
-    80;
-
-  window.scrollTo({
-    top: Math.max(0, targetY),
-    behavior: "auto",
-  });
-};
-
-autocompleteElement.addEventListener(
-  "pointerdown",
-  bringInputIntoView
-);
-
-autocompleteElement.addEventListener(
-  "focusin",
-  () => {
-    setTimeout(
-      bringInputIntoView,
-      50
-    );
-
-    setTimeout(
-      bringInputIntoView,
-      350
-    );
-  }
-);
-
+        /*
+          Handle selected Google place.
+        */
         autocompleteElement.addEventListener(
           "gmp-select",
           async (
@@ -254,9 +307,7 @@ autocompleteElement.addEventListener(
               ],
             });
 
-            if (
-              !place.location
-            ) {
+            if (!place.location) {
               console.error(
                 "Selected place has no location."
               );
@@ -300,33 +351,40 @@ autocompleteElement.addEventListener(
     return () => {
       cancelled = true;
 
-      if (
-        firstScrollTimeout
-      ) {
+      if (scrollTimeout1) {
         clearTimeout(
-          firstScrollTimeout
+          scrollTimeout1
         );
       }
 
-      if (
-        secondScrollTimeout
-      ) {
+      if (scrollTimeout2) {
         clearTimeout(
-          secondScrollTimeout
+          scrollTimeout2
         );
       }
+
+      if (scrollTimeout3) {
+        clearTimeout(
+          scrollTimeout3
+        );
+      }
+
+      window.visualViewport?.removeEventListener(
+        "resize",
+        handleViewportChange
+      );
 
       if (
         autocompleteElement
       ) {
         autocompleteElement.removeEventListener(
-          "focusin",
-          positionInputOnMobile
+          "pointerdown",
+          handlePointerDown
         );
 
         autocompleteElement.removeEventListener(
-          "pointerdown",
-          positionInputOnMobile
+          "focusin",
+          handleFocusIn
         );
       }
 
@@ -336,6 +394,8 @@ autocompleteElement.addEventListener(
         containerRef.current.innerHTML =
           "";
       }
+
+      autocompleteElement = null;
     };
   }, [
     placeholder,
